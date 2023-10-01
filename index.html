@@ -32,6 +32,13 @@
                         <td>Background color</td>
                         <td><input id="color" name="color" type="color" value="#ffffff"></td>
                     </tr>
+                    <tr>
+                        <td>Print offset in mm.</td>
+                        <td>
+                            X: <input id="offsetx" name="offsetx" type="number" min="-5" max="5" value="0">
+                            Y: <input id="offsety" name="offsety" type="number" min="-5" max="5" value="0">
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <button id="generate" type="button">Generate PDF</button>
@@ -39,54 +46,58 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js" referrerpolicy="no-referrer"></script>
         <script>
-            function hexToRGB(hex) {
-                return hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,
+            // Get contrasting black or white. Based on W3C's suggestion: https://www.w3.org/TR/AERT/#color-contrast
+            function contrast(color) {
+                const rgb = color.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,
                                    (m, r, g, b) => '#' + r + r + g + g + b + b)
                     .substring(1).match(/.{2}/g)
-                    .map(x => parseInt(x, 16))
+                    .map(x => parseInt(x, 16));
+                const brightness = ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000;
+                return (brightness > 125) ? '#000000' : '#ffffff';
             }
             function bottleCap(pdf, x, y, background, foreground, qr) {
                 const radius = 10;
                 pdf.setFillColor(background);
-                pdf.circle(x+radius, y+radius, radius+1, 'F');
-                pdf.addImage(qr, 'png', x+radius-5.5, y+radius-5, 11, 11);
+                pdf.circle(x, y, radius+1, 'F');
+                pdf.addImage(qr, 'png', x-5.5, y-5, 11, 11);
                 pdf.setTextColor(foreground);
                 pdf.setFontSize(6);
-                pdf.text(document.getElementById('name').value, x+radius, y+4, {'align': 'center'});
+                pdf.text(document.getElementById('name').value, x, y-6, {'align': 'center'});
                 pdf.setFontSize(5);
-                pdf.text(document.getElementById('date').value, x+radius, y+18, {'align': 'center'});
+                pdf.text(document.getElementById('date').value, x, y+8, {'align': 'center'});
             }
             document.addEventListener("DOMContentLoaded", () => {
                 document.querySelectorAll('input').forEach((input) => {
-                    input.value = localStorage.getItem(input.name);
+                    input.value = localStorage.getItem(input.name) || input.value;
                     input.addEventListener('input', (e) => {
                         localStorage.setItem(e.target.name, e.target.value);
                     })
                 })
                 document.getElementById('generate').addEventListener('click', () => {
-                    const color = document.getElementById("color").value;
-                    const rgb = hexToRGB(color);
-                    const brightness = ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000;
-                    const textColor = (brightness > 125) ? '#000000' : '#ffffff';
+                    const background = document.getElementById("color").value;
+                    const foreground = contrast(background);
                     QRCode.toDataURL(document.getElementById('url').value, {
                         'errorCorrectionLevel': 'L',
                         'margin': 0,
                         'color': {
-                            dark: textColor == '#000000' ? textColor : color,
-                            light: textColor == '#ffffff' ? textColor : color
+                            dark: foreground == '#000000' ? foreground : background,
+                            light: foreground == '#ffffff' ? foreground : background
                         }
                     }).then(qr => {
-                        const { jsPDF } = globalThis.jspdf;
-                        var pdf = new jsPDF();
-                        const firstX = 12, firstY = 18;
-                        const lastX = 180, lastY = 258;
+                        // Center of the circles
+                        const firstX = 22, firstY = 28, lastX = 190, lastY = 268;
+                        // Number of circles on the page
                         const numX = 8, numY = 11;
                         const stepX = (lastX - firstX) / (numX - 1);
                         const stepY = (lastY - firstY) / (numY - 1);
+                        const { jsPDF } = globalThis.jspdf;
+                        var pdf = new jsPDF();
                         for (var x = 0; x < numX; x++) {
                             for (var y = 0; y < numY; y++) {
-                                bottleCap(pdf, firstX + (x * stepX), firstY + (y * stepY),
-                                color, textColor, qr);
+                                bottleCap(pdf,
+                                          firstX + (x * stepX) + parseInt(document.getElementById("offsetx").value),
+                                          firstY + (y * stepY) + parseInt(document.getElementById("offsety").value),
+                                        background, foreground, qr);
                             }
                         }
                         pdf.save(`${document.getElementById('name').value} Bottle Caps.pdf`.trim());
