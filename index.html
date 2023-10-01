@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Bottle Cap Avery 20-RND</title>
+        <style>
+            body {
+                font-family: Tahoma, Verdana, sans-serif;  
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Bottle Cap Avery 20-RND</h1>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Name</td>
+                        <td><input id="name" name="name" autocomplete="name"></td>
+                    </tr>
+                    <tr>
+                        <td>URL</td>
+                        <td><input id="url" name="url" type="url" autocomplete="url"></td>
+                    </tr>
+                    <tr>
+                        <td>Date</td>
+                        <td><input id="date" name="date" type="date" autocomplete="on"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button id="generate" type="button">Generate PDF</button>
+        </main>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js" referrerpolicy="no-referrer"></script>        <script>
+            function bottleCap(pdf, x, y, qr) {
+                const radius = 10;
+                pdf.setDrawColor('0.9');
+                pdf.setLineWidth(0.05);
+                pdf.circle(x+radius, y+radius, radius);
+                pdf.addImage(qr, 'png', x+radius-6.5, y+radius-6, 13, 13);
+                pdf.setFontSize(6);
+                pdf.text(document.getElementById('name').value, x+radius, y+4, {'align': 'center'});
+                pdf.setFontSize(5);
+                pdf.text(document.getElementById('date').value, x+radius, y+18, {'align': 'center'});
+            }
+            document.addEventListener("DOMContentLoaded", () => {
+                document.querySelectorAll('input').forEach((input) => {
+                    input.value = localStorage.getItem(input.name);
+                    input.addEventListener('input', (e) => {
+                        localStorage.setItem(e.target.name, e.target.value);
+                    })
+                })
+                document.getElementById('generate').addEventListener('click', () => {
+                    QRCode.toDataURL(document.getElementById('url').value, {
+                        'errorCorrectionLevel': 'L'
+                    }).then(qr => {
+                        const { jsPDF } = globalThis.jspdf;
+                        var pdf = new jsPDF();
+                        const firstX = 11, firstY = 19;
+                        const lastX = 179, lastY = 259;
+                        const numX = 8, numY = 11;
+                        const stepX = (lastX - firstX) / (numX - 1);
+                        const stepY = (lastY - firstY) / (numY - 1);
+                        for (var x = 0; x < numX; x++) {
+                            for (var y = 0; y < numY; y++) {
+                                bottleCap(pdf, firstX + (x * stepX), firstY + (y * stepY), qr);
+                            }
+                        }
+                        pdf.save(`${document.getElementById('name').value} Bottle Caps.pdf`.trim());
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
