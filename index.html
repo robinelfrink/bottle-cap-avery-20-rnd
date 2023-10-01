@@ -9,43 +9,53 @@
             body {
                 font-family: Tahoma, Verdana, sans-serif;  
             }
+            #preview {
+                border: 1px solid #999;
+                margin-left: 2em;
+            }
         </style>
     </head>
     <body>
         <main>
             <h1>Bottle Cap Avery 20-RND</h1>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Name</td>
-                        <td><input id="name" name="name" autocomplete="name"></td>
-                    </tr>
-                    <tr>
-                        <td>URL</td>
-                        <td><input id="url" name="url" type="url" autocomplete="url"></td>
-                    </tr>
-                    <tr>
-                        <td>Date</td>
-                        <td><input id="date" name="date" type="date" autocomplete="on"></td>
-                    </tr>
-                    <tr>
-                        <td>Background color</td>
-                        <td><input id="color" name="color" type="color" value="#ffffff"></td>
-                    </tr>
-                    <tr>
-                        <td>Print offset in mm.</td>
-                        <td>
-                            X: <input id="offsetx" name="offsetx" type="number" min="-5" max="5" value="0">
-                            Y: <input id="offsety" name="offsety" type="number" min="-5" max="5" value="0">
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <button id="generate" type="button">Generate PDF</button>
+            <div style="float: left;">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Name</td>
+                            <td><input id="name" name="name" autocomplete="name"></td>
+                        </tr>
+                        <tr>
+                            <td>URL</td>
+                            <td><input id="url" name="url" type="url" autocomplete="url"></td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td><input id="date" name="date" type="date" autocomplete="on"></td>
+                        </tr>
+                        <tr>
+                            <td>Background color</td>
+                            <td><input id="color" name="color" type="color" value="#ffffff"></td>
+                        </tr>
+                        <tr>
+                            <td>Print offset in mm.</td>
+                            <td>
+                                X: <input id="offsetx" name="offsetx" type="number" min="-5" max="5" value="0">
+                                Y: <input id="offsety" name="offsety" type="number" min="-5" max="5" value="0">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button id="generate" type="button">Generate PDF</button>
+            </div>
+            <div>
+                <iframe id="preview" width="250" height="250"></iframe>
+            </div>
         </main>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js" referrerpolicy="no-referrer"></script>
         <script>
+            const {jsPDF} = globalThis.jspdf;
             // Get contrasting black or white. Based on W3C's suggestion: https://www.w3.org/TR/AERT/#color-contrast
             function contrast(color) {
                 const rgb = color.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,
@@ -55,49 +65,71 @@
                 const brightness = ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000;
                 return (brightness > 125) ? '#000000' : '#ffffff';
             }
-            function bottleCap(pdf, x, y, background, foreground, qr) {
-                const radius = 10;
+            function qrURL(url) {
+                const background = document.getElementById("color").value;
+                const foreground = contrast(background);
+                return QRCode.toDataURL(document.getElementById('url').value, {
+                    'errorCorrectionLevel': 'L',
+                    'margin': 0,
+                    'color': {
+                        dark: foreground == '#000000' ? foreground : background,
+                        light: foreground == '#ffffff' ? foreground : background
+                    }
+                }).then((qr) => {
+                    return Promise.resolve({
+                        'qr': qr,
+                        'background': background,
+                        'foreground': foreground
+                    });
+                });
+            }
+            function bottleCap(pdf, x, y, background, foreground, qr, preview = false) {
+                const radius = (preview ? 30 : 10);
+                if (preview) {
+                    pdf.setDrawColor(0.9);
+                    pdf.setLineWidth(0.05);
+                    pdf.circle(x, y, radius);
+                }
                 pdf.setFillColor(background);
                 pdf.circle(x, y, radius+1, 'F');
-                pdf.addImage(qr, 'png', x-5.5, y-5, 11, 11);
+                pdf.addImage(qr, 'png', x-(radius*0.55), y-(radius*0.5), radius*1.1, radius*1.1);
                 pdf.setTextColor(foreground);
-                pdf.setFontSize(6);
-                pdf.text(document.getElementById('name').value, x, y-6, {'align': 'center'});
-                pdf.setFontSize(5);
-                pdf.text(document.getElementById('date').value, x, y+8, {'align': 'center'});
+                pdf.setFontSize(radius*0.6);
+                pdf.text(document.getElementById('name').value, x, y-(radius*0.6), {'align': 'center'});
+                pdf.setFontSize(radius*0.5);
+                pdf.text(document.getElementById('date').value, x, y+(radius*0.8), {'align': 'center'});
+            }
+            function preview() {
+                var pdf = new jsPDF({'format': [70, 70]});
+                qrURL(document.getElementById('url').value).then(qr => {
+                    bottleCap(pdf, 35, 35, qr['background'], qr['foreground'], qr['qr'], true);
+                    document.getElementById('preview').src = pdf.output('bloburi')+'#toolbar=0&navpanes=0';
+                });
             }
             document.addEventListener("DOMContentLoaded", () => {
                 document.querySelectorAll('input').forEach((input) => {
                     input.value = localStorage.getItem(input.name) || input.value;
                     input.addEventListener('input', (e) => {
                         localStorage.setItem(e.target.name, e.target.value);
+                        preview();
                     })
                 })
+                preview();
                 document.getElementById('generate').addEventListener('click', () => {
-                    const background = document.getElementById("color").value;
-                    const foreground = contrast(background);
-                    QRCode.toDataURL(document.getElementById('url').value, {
-                        'errorCorrectionLevel': 'L',
-                        'margin': 0,
-                        'color': {
-                            dark: foreground == '#000000' ? foreground : background,
-                            light: foreground == '#ffffff' ? foreground : background
-                        }
-                    }).then(qr => {
+                    qrURL(document.getElementById('url').value).then(qr => {
                         // Center of the circles
                         const firstX = 22, firstY = 28, lastX = 190, lastY = 268;
                         // Number of circles on the page
                         const numX = 8, numY = 11;
                         const stepX = (lastX - firstX) / (numX - 1);
                         const stepY = (lastY - firstY) / (numY - 1);
-                        const { jsPDF } = globalThis.jspdf;
                         var pdf = new jsPDF();
                         for (var x = 0; x < numX; x++) {
                             for (var y = 0; y < numY; y++) {
                                 bottleCap(pdf,
                                           firstX + (x * stepX) + parseInt(document.getElementById("offsetx").value),
                                           firstY + (y * stepY) + parseInt(document.getElementById("offsety").value),
-                                        background, foreground, qr);
+                                          qr['background'], qr['foreground'], qr['qr']);
                             }
                         }
                         pdf.save(`${document.getElementById('name').value} Bottle Caps.pdf`.trim());
