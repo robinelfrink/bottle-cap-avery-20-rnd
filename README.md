@@ -38,3 +38,9 @@ Here's how this looks on one of my brews:
 
 I'm happy to accept pull requests, as long as they don't interfere with what
 I think is the best layout :blush:
+
+## Acknowledgement
+
+All this has been made possible by
+[jsPDF](https://github.com/parallax/jsPDF) and
+[node-qrcode](https://github.com/soldair/node-qrcode).
