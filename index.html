@@ -9,15 +9,20 @@
             body {
                 font-family: Tahoma, Verdana, sans-serif;  
             }
+            main {
+                display: flex;
+                flex-wrap: wrap;
+            }
             #preview {
-                border: 1px solid #999;
                 margin-left: 2em;
+                height: 10em;
+                width: 10em;
             }
         </style>
     </head>
     <body>
+        <h1>Bottle Cap Avery 20-RND</h1>
         <main>
-            <h1>Bottle Cap Avery 20-RND</h1>
             <div style="float: left;">
                 <table>
                     <tbody>
@@ -49,7 +54,7 @@
                 <button id="generate" type="button">Generate PDF</button>
             </div>
             <div>
-                <iframe id="preview" width="250" height="250"></iframe>
+                <embed id="preview" ></embed>
             </div>
         </main>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -102,8 +107,11 @@
             function preview() {
                 var pdf = new jsPDF({'format': [70, 70]});
                 qrURL(document.getElementById('url').value).then(qr => {
+                    const preview = document.getElementById('preview');
                     bottleCap(pdf, 35, 35, qr['background'], qr['foreground'], qr['qr'], true);
-                    document.getElementById('preview').src = pdf.output('bloburi')+'#toolbar=0&navpanes=0';
+                    preview.type = 'application/pdf';
+                    preview.src = pdf.output('bloburi')+'#toolbar=0&navpanes=0&statusbar=0&scrollbar=0';
+
                 });
             }
             document.addEventListener("DOMContentLoaded", () => {
