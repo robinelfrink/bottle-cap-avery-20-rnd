@@ -18,7 +18,9 @@ The layout of the stickers is highly opinionated:
 
 ## How to use
 
-Download the file `index.html` and open it in your webbrowser. I've only
+Download the file `index.html` and open it in your webbrowser, or head to
+[this project's GitHub page](https://robinelfrink.github.io/bottle-cap-avery-20-rnd/).
+I've only tested Chrome so far.
 tested Chrome so far.
 
 Fill out the form, and click on the button. Print the resulting PDF on
