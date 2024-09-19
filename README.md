@@ -21,7 +21,6 @@ The layout of the stickers is highly opinionated:
 Download the file `index.html` and open it in your webbrowser, or head to
 [this project's GitHub page](https://robinelfrink.github.io/bottle-cap-avery-20-rnd/).
 I've only tested Chrome so far.
-tested Chrome so far.
 
 Fill out the form, and click on the button. Print the resulting PDF on
 regular paper, just to check if you need to adjust the offsets (some printers,
@@ -39,7 +38,7 @@ Here's how this looks on one of my brews:
 ## Development
 
 I'm happy to accept pull requests, as long as they don't interfere with what
-I think is the best layout :blush:
+I think is best :blush:
 
 ## Acknowledgement
 
