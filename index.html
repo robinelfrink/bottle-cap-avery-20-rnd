@@ -44,10 +44,22 @@
                         </tr>
                         <tr>
                             <td>Print offset in mm.</td>
-                            <td>
-                                X: <input id="offsetx" name="offsetx" type="number" inputmode="numeric" pattern="[0-9]*" min="-5" max="5" value="0">
-                                Y: <input id="offsety" name="offsety" type="number" inputmode="numeric" pattern="[0-9]*" min="-5" max="5" value="0">
-                            </td>
+                            <td>X: <input id="offsetx" name="offsetx" type="number" inputmode="numeric" pattern="[0-9]*" min="-5" max="5" value="0"></td>
+                        <tr>
+                            <td></td>
+                            <td>Y: <input id="offsety" name="offsety" type="number" inputmode="numeric" pattern="[0-9]*" min="-5" max="5" value="0"></td>
+                        </tr>
+                        <tr>
+                            <td>Print range</td>
+                            <td>Start column: <input id="startx" name="startx" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="8" value="1"></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Start row: <input id="starty" name="starty" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="11" value="1"></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Count: <input id="count" name="count" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="88" value="88"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -61,6 +73,8 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js" referrerpolicy="no-referrer"></script>
         <script>
             const {jsPDF} = globalThis.jspdf;
+            // Number of circles on the page
+            const numX = 8, numY = 11;
             // Get contrasting black or white. Based on W3C's suggestion: https://www.w3.org/TR/AERT/#color-contrast
             function contrast(color) {
                 const rgb = color.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,
@@ -114,6 +128,14 @@
 
                 });
             }
+            function setMaxCount() {
+                const startX = parseInt(document.getElementById("startx").value);
+                const startY = parseInt(document.getElementById("starty").value);
+                document.getElementById("count").value = Math.min(numX*numY, (numX*numY)-(startX-1)-((startY-1)*8));
+            }
+            document.getElementById("startx").addEventListener("change", setMaxCount);
+            document.getElementById("starty").addEventListener("change", setMaxCount);
+            setMaxCount();
             document.addEventListener("DOMContentLoaded", () => {
                 document.querySelectorAll('input').forEach((input) => {
                     input.value = localStorage.getItem(input.name) || input.value;
@@ -127,18 +149,23 @@
                     qrURL(document.getElementById('url').value).then(qr => {
                         // Center of the circles
                         const firstX = 22, firstY = 28, lastX = 190, lastY = 268;
-                        // Number of circles on the page
-                        const numX = 8, numY = 11;
+                        // Start and count
+                        var startX = parseInt(document.getElementById("startx").value)-1;
+                        var startY = parseInt(document.getElementById("starty").value)-1;
+                        const count = parseInt(document.getElementById("count").value);
                         const stepX = (lastX - firstX) / (numX - 1);
                         const stepY = (lastY - firstY) / (numY - 1);
                         var pdf = new jsPDF();
-                        for (var x = 0; x < numX; x++) {
-                            for (var y = 0; y < numY; y++) {
+                        var total = 0;
+                        for (var y = startY; y < numY; y++) {
+                            for (var x = startX; x < numX && total<count; x++) {
                                 bottleCap(pdf,
                                           firstX + (x * stepX) + parseInt(document.getElementById("offsetx").value),
                                           firstY + (y * stepY) + parseInt(document.getElementById("offsety").value),
                                           qr['background'], qr['foreground'], qr['qr']);
+                                total++;
                             }
+                            startX = 0;
                         }
                         pdf.save(`${document.getElementById('name').value} Bottle Caps.pdf`.trim());
                     });
