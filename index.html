@@ -28,11 +28,11 @@
                     <tbody>
                         <tr>
                             <td>Name</td>
-                            <td><input id="name" name="name" autocomplete="name"></td>
+                            <td><input id="name" name="name" autocomplete="name" placeholder="Tripel"></td>
                         </tr>
                         <tr>
                             <td>URL</td>
-                            <td><input id="url" name="url" type="url" autocomplete="url"></td>
+                            <td><input id="url" name="url" type="url" autocomplete="url" placeholder="https://brewfather.app/"></td>
                         </tr>
                         <tr>
                             <td>Date</td>
@@ -84,10 +84,15 @@
                 const brightness = ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000;
                 return (brightness > 125) ? '#000000' : '#ffffff';
             }
+            function elementValue(element) {
+                if (element.value!='')
+                    return element.value;
+                return element.getAttribute('placeholder');
+            }
             function qrURL(url) {
                 const background = document.getElementById("color").value;
                 const foreground = contrast(background);
-                return QRCode.toDataURL(document.getElementById('url').value, {
+                return QRCode.toDataURL(elementValue(document.getElementById('url')), {
                     'errorCorrectionLevel': 'L',
                     'margin': 0,
                     'color': {
@@ -114,13 +119,13 @@
                 pdf.addImage(qr, 'png', x-(radius*0.55), y-(radius*0.5), radius*1.1, radius*1.1);
                 pdf.setTextColor(foreground);
                 pdf.setFontSize(radius*0.6);
-                pdf.text(document.getElementById('name').value, x, y-(radius*0.6), {'align': 'center'});
+                pdf.text(elementValue(document.getElementById('name')), x, y-(radius*0.6), {'align': 'center'});
                 pdf.setFontSize(radius*0.5);
-                pdf.text(document.getElementById('date').value, x, y+(radius*0.8), {'align': 'center'});
+                pdf.text(elementValue(document.getElementById('date')), x, y+(radius*0.8), {'align': 'center'});
             }
             function preview() {
                 var pdf = new jsPDF({'format': [70, 70]});
-                qrURL(document.getElementById('url').value).then(qr => {
+                qrURL(elementValue(document.getElementById('url'))).then(qr => {
                     const preview = document.getElementById('preview');
                     bottleCap(pdf, 35, 35, qr['background'], qr['foreground'], qr['qr'], true);
                     preview.type = 'application/pdf';
@@ -143,10 +148,11 @@
                         localStorage.setItem(e.target.name, e.target.value);
                         preview();
                     })
-                })
+                });
+                document.getElementById("date").valueAsDate = new Date();
                 preview();
                 document.getElementById('generate').addEventListener('click', () => {
-                    qrURL(document.getElementById('url').value).then(qr => {
+                    qrURL(elementValue(document.getElementById('url'))).then(qr => {
                         // Center of the circles
                         const firstX = 22, firstY = 28, lastX = 190, lastY = 268;
                         // Start and count
@@ -167,7 +173,7 @@
                             }
                             startX = 0;
                         }
-                        pdf.save(`${document.getElementById('name').value} Bottle Caps.pdf`.trim());
+                        pdf.save(`${elementValue(document.getElementById('name'))} Bottle Caps.pdf`.trim());
                     });
                 });
             });
